@@ -26,6 +26,15 @@ public class StudentDAO {
         }
     }
 
+    public boolean deleteStudent(String rollNo) throws SQLException {
+        String sql = "DELETE FROM students WHERE roll_no = ?";
+        try (Connection conn = DBConnection.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
+            ps.setString(1, rollNo);
+            return ps.executeUpdate() > 0;
+        }
+    }
+
     public List<Student> getAllStudents() throws SQLException {
         List<Student> list = new ArrayList<>();
         String sql = "SELECT * FROM students ORDER BY roll_no";

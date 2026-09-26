@@ -20,6 +20,7 @@ public class DashboardFrame extends JFrame {
     private JTextField rollField, nameField, courseField, branchField, contactField;
     private JComboBox<String> genderBox;
     private DefaultTableModel studentTableModel;
+    private JTable studentTable;
 
     // Marks Fields
     private JTextField resRollField, semField, s1Field, s2Field, s3Field, s4Field, s5Field;
@@ -37,6 +38,38 @@ public class DashboardFrame extends JFrame {
 
         add(tabbedPane);
         loadStudentsTable();
+    }
+
+    private void deleteSelectedStudent() {
+        int selectedRow = studentTable.getSelectedRow();
+        if (selectedRow == -1) {
+            JOptionPane.showMessageDialog(this, "Please click on a row in the table first to select it.", "Selection Required", JOptionPane.WARNING_MESSAGE);
+            return;
+        }
+
+        String rollNo = (String) studentTableModel.getValueAt(selectedRow, 0);
+        String name = (String) studentTableModel.getValueAt(selectedRow, 1);
+
+        int confirm = JOptionPane.showConfirmDialog(
+                this,
+                "Are you sure you want to delete student: " + name + " (Roll: " + rollNo + ")?\nThis will also delete all their exam results.",
+                "Confirm Delete",
+                JOptionPane.YES_NO_OPTION,
+                JOptionPane.WARNING_MESSAGE
+        );
+
+        if (confirm == JOptionPane.YES_OPTION) {
+            try {
+                if (studentDAO.deleteStudent(rollNo)) {
+                    JOptionPane.showMessageDialog(this, "Student deleted successfully.");
+                    loadStudentsTable();
+                } else {
+                    JOptionPane.showMessageDialog(this, "Failed to delete student.", "Error", JOptionPane.ERROR_MESSAGE);
+                }
+            } catch (SQLException ex) {
+                JOptionPane.showMessageDialog(this, "Database error: " + ex.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
+            }
+        }
     }
 
     private JPanel createStudentPanel() {
@@ -73,12 +106,30 @@ public class DashboardFrame extends JFrame {
         saveStudentBtn.addActionListener(e -> registerStudent());
 
         // Table View
-        studentTableModel = new DefaultTableModel(new String[]{"Roll No", "Name", "Course", "Branch", "Gender", "Contact"}, 0);
-        JTable table = new JTable(studentTableModel);
-        JScrollPane scrollPane = new JScrollPane(table);
+        studentTableModel = new DefaultTableModel(new String[]{"Roll No", "Name", "Course", "Branch", "Gender", "Contact"}, 0) {
+            @Override
+            public boolean isCellEditable(int row, int column) {
+                return false;
+            }
+        };
+        studentTable = new JTable(studentTableModel);
+        JScrollPane scrollPane = new JScrollPane(studentTable);
+
+        // Right-side panel with Table and Delete Button
+        JPanel tablePanel = new JPanel(new BorderLayout(5, 5));
+        tablePanel.add(scrollPane, BorderLayout.CENTER);
+
+        JPanel tableActions = new JPanel(new FlowLayout(FlowLayout.RIGHT));
+        JButton deleteBtn = new JButton("Delete Selected Student");
+        deleteBtn.setForeground(new Color(180, 0, 0));
+        deleteBtn.setFont(new Font("Segoe UI", Font.BOLD, 12));
+        deleteBtn.addActionListener(e -> deleteSelectedStudent());
+        tableActions.add(deleteBtn);
+
+        tablePanel.add(tableActions, BorderLayout.SOUTH);
 
         panel.add(formPanel, BorderLayout.WEST);
-        panel.add(scrollPane, BorderLayout.CENTER);
+        panel.add(tablePanel, BorderLayout.CENTER);
         return panel;
     }
 
